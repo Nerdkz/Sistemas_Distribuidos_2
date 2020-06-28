@@ -1,4 +1,5 @@
 const restify = require( "restify" );
+const axios = require( "axios" ).default;
 const mongoose = require ( "mongoose" );
 const server = restify.createServer();
 
@@ -8,6 +9,12 @@ const dao = require( "./dao" );
 
 server.use(restify.plugins.queryParser());
 server.use(restify.plugins.bodyParser());
+
+const axiosInstance = axios.create(
+    {
+        baseURL: `http://localhost:3000/`
+    }
+);
 
 const memeURL = '/meme';
 
