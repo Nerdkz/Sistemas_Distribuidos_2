@@ -1,118 +1,63 @@
-const Carro = require( "./models/Carro" );
-const { model } = require("./database/Conexao");
-const { Op } = require( "sequelize" );
+const Meme = require( "./database/models/Meme" );
 
-
-// Inserir Carro
-async function inserir(carro){
-    
-    carro = await Carro.create(carro);
-    
-    let carroCriado = await Carro.findByPk(carro.id);
-    
-    return carroCriado;
-
+// Inserir Meme
+async function inserir(meme){
+    return new Promise(
+        async function(resolve, reject){
+            let result = await Meme.create(meme);
+            return result;
+        }
+    );
 }
 
-// Atualizar Carro
-async function atualizar(carroEnv){
-
-    carro = await Carro.update(
-        carroEnv,
-        {
-            where: {
-                id: carroEnv.id
+// Atualizar Meme
+async function atualizar(id, meme){
+    return new Promise(
+        async function(resolve, reject){
+            // faz a verificação se o meme existe antes de atualizar
+            let searchMeme = await Meme.findByIdAndUpdate(id, meme);
+            
+            //se tiver algum resultado da busca da operação de update ele envia o resultado 
+            if(searchMeme){
+                let result = await Meme.findById(id);
+                return result;
+            }
+            else{
+                return;
             }
         }
     );
-
-    let carroAtualizado = await Carro.findByPk(carroEnv.id);
-    
-    return carroAtualizado;
-
 }
 
-// Listar Carro(s)
-async function listar(carroEnv){
-
-
-    if(carroEnv.id){
-        
-        let carros = await Carro.findByPk(carroEnv.id);
-        return carros;
-    }
-    else if(carroEnv.marca && carroEnv.modelo){
-        
-        let carros = await Carro.findAll(
-            {
-                where: {
-                    [Op.and]: [
-                        {marca: carroEnv.marca},
-                        {modelo: carroEnv.modelo}
-                    ]    
-                }            
-            }
-        );
-        return carros;
-    }
-    else if(carroEnv.marca){
-        
-        let carros = await Carro.findAll(
-            {
-                where: { 
-                    marca: carroEnv.marca 
-                }            
-            }
-        );
-        return carros;
-    }
-    else if(carroEnv.anoInicial){
-        
-        let carros = await Carro.findAll(
-            {
-                where: { 
-                    ano:{
-                        [Op.gte]: carroEnv.anoInicial
-                    } 
-                }            
-            }
-        );
-        return carros;
-    }
-    else if(carroEnv.valorInicial){
-        
-        let carros = await Carro.findAll(
-            {
-                where: { 
-                    ano:{
-                        [Op.gte]: carroEnv.valorInicial
-                    } 
-                }            
-            }
-        );
-
-        return carros;
-    }
-
-    let carros = await Carro.findAll();
-    return carros;
+// Listar meme(s)
+async function listar(){
+    return new Promise(
+        async function(resolve, reject){
+            let result = await Meme.find();
+            return result;
+        }
+    );    
 }
 
-// Excluir Carro(s)
+// Listar meme por id
+async function listar(id){
+    return new Promise(
+        async function(resolve, reject){
+            let result = await Meme.findById(id);
+            return result;
+        }
+    );    
+}
 
+// Excluir meme
 async function excluir(id){
-    
-    let numEcluidos = await Carro.destroy(
-        {
-            where: {
-                id: id
-            }
+    return new Promise(
+        async function(resolve, reject) {
+            await Meme.findByIdAndRemove(id);
+            return;
         }
-    );
-    
-    return numEcluidos;
+    );    
 }
-
 
 module.exports = {
     inserir,

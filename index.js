@@ -1,75 +1,125 @@
 const restify = require( "restify" );
+const mongoose = require ( "mongoose" );
 const server = restify.createServer();
+
+const database = require( "./database" );
 const dao = require( "./dao" );
 
 
 server.use(restify.plugins.queryParser());
 server.use(restify.plugins.bodyParser());
 
-const carroURL = '/ec201/carro';
+const memeURL = '/meme';
 
-// POST http://localhost:3000/ec201/carro => Create
-server.post(`${carroURL}`, async (req, res) => {
+// print no console com as requisições feitas que ajuda na hora de debugar
+function logRequest(req, res, next) {
 
-    let carro = {
-        marca : req.body.marca,
-        modelo : req.body.modelo,
-        ano : req.body.ano,
-        valor : req.body.valor,
+    let msg = `[${req.getRoute().method}] ${req.href()}`
+
+    if(req.body){
+      
+      msg +=  ` => ${JSON.stringify(req.body)}`;
+    }
+    console.log(msg);
+    next();
+}
+
+
+// Função utilizada para realizar a autenticação, ela sempre é rodada, pois é  injetada como handler do restify.
+async function autenticar(req, res, next) {
+    
+    const token = req.header("token");
+    
+    if (!token) {
+
+      res.json(403, { msg: "Token não fornecido!" });
+    } 
+    else if (!(await autenticacao.validar(token))) {
+      
+        res.json(401, { msg: "Token inválido!" });
+    } 
+    else {
+      
+        next();
+    }
+}
+  
+// Realizar o login
+server.post("/auth/login", async (req, res) => {
+    
+    let username = req.body.username;
+    let password = req.body.password;
+  
+    let response = await autenticacao.logar(username, password);
+    res.json(response.status, response.data);
+});
+
+// POST http://localhost:3000/meme => Create
+server.post(`${memeURL}`, logRequest, autenticar,async (req, res) => {
+
+    let meme = {
+        
+        titulo: req.body.titulo,
+        descricao: req.body.descricao,
+        ano: req.body.ano,
     };
     
-    let carroCriado = await dao.inserir(carro);
-    
-    res.json(carroCriado);
 
+    let memeCriado = await dao.inserir(meme);
+    res.json(memeCriado);
+        
 });
 
-// PATCH http://localhost:3000/ec201/carro/id => Update
-server.patch(`${carroURL}/:id`, async (req, res) => {
+// PATCH http://localhost:3000/meme/id => Update
+server.patch(`${memeURL}/:id`, logRequest, autenticar, async (req, res) => {
     
-    let carro = {
-        id : req.params.id,
-        marca : req.body.marca,
-        modelo : req.body.modelo,
-        ano : req.body.ano,
-        valor : req.body.valor,
+
+    let meme = {
+        
+        titulo: req.body.titulo,
+        descricao: req.body.descricao,
+        ano: req.body.ano,
     };
     
-    let carroAtualizado = await dao.atualizar(carro);
-    
-    res.json(carroAtualizado);
-
+    let memeAtualizado = await dao.atualizar(req.params.id, carro);
+    res.json(memeAtualizado);    
 });
 
-// GET http://localhost:3000/ec201/carro => Read
-server.get(`${carroURL}`, async (req, res) => {
+// GET http://localhost:3000/meme => Read
+server.get(`${memeURL}`, logRequest,autenticar, async (req, res) => {
     
-    let carro = {
-        id : req.query.id,
-        marca : req.query.marca,
-        modelo : req.query.modelo,
-        anoInicial : req.query.anoInicial,
-        valorInicial : req.query.valorInicial,
-    };
-    
-    let carros = await dao.listar(carro);
-    res.json(carros);
+    let meme = await dao.listar();
+    res.json(meme);    
 });
 
-// DELETE http://localhost:3000/ec201/carro/id => Delete
-server.del(`${carroURL}/:id`, async (req, res) => {
+// GET http://localhost:3000/meme/id => Read by id
+server.get(`${memeURL}/:id`, logRequest, autenticar, async (req, res) => {
     
-    let id = req.params.id;
-
-    let numEcluidos = await dao.excluir(id);
-    
-    res.json(
-        {
-            excluidos: numEcluidos
-        }
-    )
+    let meme = await dao.listar();
+    res.json(meme);
 });
+
+// DELETE http://localhost:3000/meme/id => Delete
+server.del(`${memeURL}`, logRequest, autenticar, async (req, res) => {
+    
+    await dao.excluir(req.body.id);
+    res.send(204); 
+});
+
+
 
 server.listen(3000, () => {
     console.log(`O servidor está rodando!`);
+
+    mongoose.connect(database.DB_URL, database.DB_SETTINGS, (err) => {
+        if(!err){
+            //conectou com o mongodb
+            console.log(`Aplicação conectada ao MongoDB : ${database.DB_SETTINGS.dbName}`);
+        }
+        else{
+            //deu erro a conexao
+            console.log(`Erro ao conectar ao MongoDB: ${database.DB_URL}`);
+            console.log(`Erro: ${err}`);
+        }
+    });
 });
