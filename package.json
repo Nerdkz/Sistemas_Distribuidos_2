@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.2",
-    "mongoose": "^5.9.20",
+    "mongoose": "^5.13.15",
     "restify": "^8.5.1"
   },
   "devDependencies": {
